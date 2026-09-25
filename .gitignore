@@ -1,0 +1,68 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+secrets/
+.aws/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+junit.xml
+
+# JavaScript and build outputs
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+
+# Local datasets and processing artifacts (explicitly curated fixtures may be added later)
+data/
+datasets/
+uploads/
+artifacts/
+*.gpkg
+*.geotiff
+*.tif
+*.tiff
+*.las
+*.laz
+*.shp
+*.shx
+*.dbf
+*.sqlite*
+*.dump
+*.backup
+
+# Infrastructure state and logs
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.log
+
+# Editor and operating system
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
