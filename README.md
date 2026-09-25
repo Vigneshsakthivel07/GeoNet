@@ -3,59 +3,65 @@
 India Land Intelligence Platform — building toward a parcel-centred digital twin with spatial
 validation, historical evidence, and audited human review.
 
-**Status: backend foundation only. Not a complete product, not production-ready, not deployed.**
-There is no Next.js application, authentication, parcel database schema, OCR processor, or upload API
-in this batch. Health endpoints are operational infrastructure, not a substitute for those features.
+**Status: backend foundation committed, verification blocked. Not a complete product, not
+production-ready, not deployed.** There is no web UI, authentication, parcel schema, OCR processor
+or upload API in this batch.
+
+## Verification blocker
+
+The connector successfully committed the application files but failed twice when publishing
+`.github/workflows/ci.yml`. A subsequent branch comparison confirmed that no workflow file was
+committed. The returned error did not identify the cause; a workflow-permission problem is possible
+but not confirmed. GitHub Actions returned zero runs for this branch. No lint, type-check, unit-test
+or Compose success is claimed. Run the commands below locally or restore workflow publishing before
+merging. CI is planned, not installed.
 
 ## Problem and solution
 
 Historical cadastral documents and modern surveys need a shared spatial reference, traceable
-provenance, and comparison tools. GeoNet will integrate those sources around versioned parcels in
-PostGIS. Automated results will support authorized reviewers, not make ownership or legal decisions.
+provenance and comparison tools. GeoNet will integrate these sources around versioned parcels in
+PostGIS. Automated results support authorized reviewers, not ownership or legal decisions.
 Administrative geography will be data-driven across India rather than specific to one state.
 
-## Implemented foundation
+## Committed foundation
 
-| Component | Implementation |
+| Component | Implementation, pending execution checks |
 |---|---|
-| FastAPI | Liveness, dependency readiness, OpenAPI, JSON request logs, request IDs |
+| FastAPI | Liveness, dependency readiness, OpenAPI, JSON request logs and request IDs |
 | Metrics | Prometheus request counts and duration histograms |
-| PostgreSQL/PostGIS | Local spatial database service; readiness checks execute `PostGIS_Version()` |
+| PostGIS | Local database service; readiness executes `PostGIS_Version()` |
 | Redis | Password-protected local service and authenticated readiness probe |
-| MinIO | Local object storage, private evidence bucket initialization and bucket readiness probe |
-| Legacy GIS | Original decision engine copied without changes; integrity and behavior tests |
-| Local runtime | Docker Compose with persistent volumes, health checks and non-root API container |
-| CI definition | Lint, type-check, unit tests, Compose configuration validation and stack smoke tests |
-
-CI configuration being present is not proof it has passed. Inspect the workflow results for the
-exact commit: https://github.com/Vigneshsakthivel07/GeoNet/actions
+| MinIO | Local storage, private evidence-bucket initialization and bucket readiness probe |
+| Legacy GIS | Decision engine copied byte-for-byte; integrity and behavior tests |
+| Docker | Compose, persistent volumes, service health checks and non-root API container |
+| Tests | Assertions for engine outcomes, dependency failure, CORS, logging and metrics |
 
 ## Architecture and stack
 
-The current backend checks PostgreSQL/PostGIS, Redis, and the configured MinIO bucket. PostgreSQL
-will be the spatial source of truth; large evidence files belong in object storage. No parcel
-geometries or user data are seeded by this batch.
+The backend probes PostGIS, Redis and MinIO. PostgreSQL will be the spatial source of truth;
+large evidence files belong in object storage. No parcel geometries or user data are seeded.
 
-| Layer | Planned platform technology |
+| Layer | Planned technology |
 |---|---|
 | Web | Next.js App Router, React, TypeScript, Tailwind, shadcn/ui |
-| Map | MapLibre GL JS; Cesium integration later |
-| API | FastAPI with REST/OpenAPI |
-| Spatial persistence | PostgreSQL/PostGIS with versioned geometries and spatial indexes |
+| Map | MapLibre GL JS; Cesium later |
+| API | FastAPI, REST/OpenAPI, backend authorization |
+| Spatial data | PostgreSQL/PostGIS, versioned geometry and spatial indexes |
 | Jobs | Celery with Redis |
-| Documents | S3-compatible object storage |
-| GIS processing | GDAL, GEOS, PROJ, Shapely, GeoPandas, Rasterio |
-| FMB intelligence | OpenCV and PaddleOCR with retained processing evidence |
-| AI foundations | PyTorch, Transformers, ONNX Runtime; pgvector when retrieval is implemented |
-| Authentication | Keycloak-compatible OAuth2/OIDC and backend RBAC |
-| Production | AWS/Kubernetes/Terraform after deployment and security readiness |
+| Evidence | S3-compatible object storage |
+| GIS | GDAL, GEOS, PROJ, Shapely, GeoPandas, Rasterio |
+| FMB | OpenCV and PaddleOCR with retained intermediate artifacts |
+| AI | PyTorch, Transformers, ONNX Runtime; pgvector when retrieval is implemented |
+| Identity | Keycloak-compatible OAuth2/OIDC and RBAC |
+| Production | AWS, Kubernetes and Terraform after release readiness |
 
-Kafka, OpenSearch and nationwide partitioning are deferred until justified. No mobile application
-is included in the requested phase.
+Kafka, OpenSearch and nationwide partitioning are deferred until justified. No mobile app is planned
+for this phase.
 
 ## Local setup
 
-Requires Git and Docker with Docker Compose v2. No AWS credentials are needed.
+Requires Git and Docker Compose v2. No AWS credentials are needed. These instructions are provided
+for verification; this environment has not executed them.
 
 ```bash
 git clone --branch feature/geonet-foundation https://github.com/Vigneshsakthivel07/GeoNet.git
@@ -76,15 +82,15 @@ curl --fail http://localhost:8000/health/ready
 
 | Local endpoint | Purpose |
 |---|---|
-| http://localhost:8000/docs | Interactive API documentation |
+| http://localhost:8000/docs | API documentation |
 | http://localhost:8000/openapi.json | API schema |
-| http://localhost:8000/health/live | Process liveness; independent of dependencies |
-| http://localhost:8000/health/ready | PostGIS, Redis, and private-bucket readiness; returns 503 on failure |
-| http://localhost:8000/metrics | Prometheus metrics; keep internal in production |
-| http://localhost:9001 | Local MinIO administrative console |
+| http://localhost:8000/health/live | Process liveness |
+| http://localhost:8000/health/ready | PostGIS, Redis and evidence-bucket readiness; 503 on failure |
+| http://localhost:8000/metrics | Internal Prometheus metrics |
+| http://localhost:9001 | MinIO administrative console |
 
-Only the API and MinIO console are published, bound to loopback. Database, Redis and S3 API ports
-are internal to Compose. API health is liveness; check `/health/ready` separately before use.
+Published ports bind to loopback. Database, Redis and S3 API ports remain internal to Compose.
+Container health checks process liveness; check readiness separately.
 
 ```bash
 docker compose logs --tail=100 api
@@ -93,20 +99,19 @@ docker compose down
 ```
 
 `docker compose down` preserves volumes. Adding `--volumes` destroys local database and evidence
-storage; do not use that option unless intentionally discarding all local data. Changing credentials
-in `.env` does not rotate credentials in an existing database volume.
+storage. Changing `.env` does not rotate credentials in an existing database volume.
 
 ## Database and migrations
 
-The PostGIS image initializes the database and extension for a fresh volume. There are no domain
-tables or migrations yet. The next data milestone requires Alembic migrations for administrative
-units, parcels, geometry versions, surveys, evidence provenance, validation rules and audit events.
-Do not interpret an empty healthy database as a completed land information system.
+The PostGIS image initializes the extension for a fresh volume. Domain tables and Alembic migrations
+are not implemented. The next data milestone requires administrative units, parcels, geometry
+versions, surveys, documents, provenance, validation rules and audit events. A healthy empty database
+is not a completed land information system.
 
-## Tests
+## Test commands
 
-Use Python 3.12 for host-based development. Unit tests use injected dependency checkers and do not
-require Docker or cloud credentials. CI additionally exercises real services via Compose.
+Use Python 3.12. Unit tests inject dependency checkers and do not need cloud credentials or Docker.
+Run and retain all outputs; fix failures before merging.
 
 ```bash
 cd backend
@@ -118,63 +123,64 @@ mypy
 pytest --cov=app --cov-report=term-missing
 ```
 
-Legacy code is excluded from lint transformation to preserve the upstream file exactly. A Git-blob
-integrity test prevents accidental changes. Full GIS, browser, authentication and OCR tests cannot
-be claimed until those components exist. Dependencies use bounded version ranges; release work
-must add reproducible lockfiles, image digests and vulnerability review.
+The planned CI additionally builds the Compose stack, verifies readiness against actual services,
+stops Redis, and asserts readiness becomes 503 while liveness remains 200. It is not yet committed.
+Workflow history: https://github.com/Vigneshsakthivel07/GeoNet/actions
+
+Legacy source is excluded from lint transformation to retain exact source bytes; an integrity test
+checks its Git blob. Full GIS, browser, authentication and OCR tests cannot be claimed before those
+components exist. Release work must add dependency lockfiles, image digests and vulnerability review.
 
 ## GIS integration
 
-See [source provenance and compatibility plan](docs/gis-integration.md). The upstream
-`validate_parcel_from_files()` pipeline must retain its public behavior during integration. The
-copied decision engine is internal and is not exposed as an unvalidated HTTP endpoint.
-The original fixed UTM 43N conversion must not become the default for all India. CRS-aware adapters
-and characterization tests precede any projection changes.
+See [provenance and compatibility plan](docs/gis-integration.md). Only the final decision engine is
+copied. The complete `validate_parcel_from_files()` pipeline is not yet integrated. Its interface and
+behavior must be preserved during integration. The original fixed UTM 43N conversion is not an
+India-wide default; explicit CRS adapters and characterization tests precede projection changes.
+The copied engine is not exposed as an unvalidated HTTP endpoint.
 
-## FMB and AI architecture — planned, not implemented
+## FMB and AI architecture — planned
 
-FMB processing will retain the source PDF/image, preprocessing output, OCR text/confidence, detected
-lines, control points, reconstructed geometries, model versions and reviewer decisions. A queued
-worker will process expensive steps. Georeferencing and geometry validation must precede accepting
-results into PostGIS. AI-extracted fields require provenance and human review. No OCR accuracy,
-automatic boundary validity, or government data integration is claimed.
+Retain source documents, preprocessing output, OCR text/confidence, detected lines, control points,
+reconstructed geometries, model versions and review decisions. Expensive processing belongs in a
+queued worker. Georeferencing and geometry validation precede accepting results into PostGIS.
+AI-extracted fields require provenance and human review. No accuracy or government integration claim
+is made.
 
-## Security and deployment status
+## Security and deployment
 
-This Compose configuration is **local development only**. It uses a database bootstrap identity and
-MinIO root credentials internally; production must replace them with least-privilege roles, scoped
-storage policies and a secrets manager. There is no application authentication or rate limiter yet.
-Do not expose it publicly or upload sensitive land records.
+**Local development only.** Compose uses database bootstrap and MinIO administrative identities.
+Production needs least-privilege roles, scoped storage policies, a secrets manager, TLS and ingress
+controls. Application authentication and rate limiting are not implemented. Do not expose this
+foundation publicly or upload sensitive records.
 
-Production release requires authentication/RBAC, organization isolation, secure upload scanning and
-quotas, TLS, ingress limits, audit persistence, backups and restore testing, migration procedures,
-security scanning, pinned builds and a reviewed infrastructure plan. AWS, Kubernetes, Terraform and
-a deployment workflow are not delivered in this batch. No public application URL exists.
+Production also requires organization isolation, secure upload scanning and quotas, audit persistence,
+backups and restore tests, migrations, security scans and reviewed infrastructure. AWS, Kubernetes,
+Terraform and deployment workflows are not delivered. No live application URL exists.
 
 ## Roadmap
 
-| Milestone | Remaining deliverable |
+| Milestone | Remaining work |
 |---|---|
-| Foundation verification | Passing lint, type checks, regression tests and Compose smoke tests |
-| Land database | Administrative hierarchy, versioned parcel models, migrations and spatial indexes |
-| Secure web workflow | Authentication, backend authorization, Next.js and MapLibre connected to real parcel APIs |
-| GIS integration | Full preserved pipeline, input validation, CRS adapters and versioned rules |
-| Evidence processing | Secure uploads, survey imports, Celery, OCR/CV artifacts and review |
-| Digital twin | History, evidence, validation comparisons, reports and complete audit trails |
+| Foundation verification | Publish CI and pass lint, type checks, tests and Compose smoke checks |
+| Land database | Administrative hierarchy, versioned parcels, migrations and indexes |
+| Secure web workflow | Authentication, authorization, Next.js and MapLibre with real parcel APIs |
+| GIS integration | Preserved pipeline, validated input, CRS adapters and configurable versioned rules |
+| Evidence processing | Secure uploads, survey import, Celery, OCR/CV artifacts and review |
+| Digital twin | History, evidence, comparisons, reports and audit trails |
 | Release | End-to-end tests, security review, deployment automation and verified live environment |
 
 ## Screenshots
 
-No screenshots are included because the web UI has not been implemented. Screenshots will show
-real running workflows, not fabricated product screens.
+No screenshots: the web UI is not implemented. Future screenshots must show real workflows.
 
-## Contribution guidelines
+## Contributing
 
-Inspect existing behavior before changing code. Make focused feature-branch changes, add tests,
-run CI, and document API or migration impacts. Do not commit credentials or sensitive datasets.
-Keep automated spatial results distinct from legal authority and human verification.
+Inspect existing behavior before changing code. Use focused feature branches, assertions and passing
+checks. Document API and migration impacts. Never commit credentials or sensitive datasets. Keep
+automated spatial status distinct from human review and legal authority.
 
 ## License
 
-A distribution license has not been selected. Do not assume unrestricted redistribution rights.
-The original GIS source and its owner are attributed in the integration document.
+No distribution license has been selected. Do not assume unrestricted redistribution rights.
+The owner-authorized original GIS source is attributed in the integration document.
